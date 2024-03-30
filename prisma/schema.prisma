@@ -21,3 +21,20 @@ model User {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }
+
+model Questionnaire {
+  questionnaireId Int      @id @default(autoincrement())
+  DecisionTreeNode   String   @db.VarChar(255)
+  DecisionTreeNodeResponse String @db.VarChar(255)
+}
+
+model Destionation {
+  destinationId Int @id @default(autoincrement())
+  Name String @db.VarChar(255)
+  Description String @db.VarChar(255)
+}
+
+model Sessions {
+  SessionId Int @id @default(autoincrement())
+  userId Int 
+}

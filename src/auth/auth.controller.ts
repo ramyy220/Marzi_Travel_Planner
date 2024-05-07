@@ -1,9 +1,11 @@
-import { Body, Controller, Post } from '@nestjs/common';
+import { Body, Controller, Post, Put, Req, UseGuards } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { SignupDto } from './dto/signupDto';
 import { SigninDto } from './dto/signinDto';
 import { forgotPasswordDto } from './dto/forgotPasswordDto';
 import { forgotPasswordConfDto } from './dto/forgotPasswordConfDto';
+import { UpdateProfileDto } from './dto/updateProfileDto';
+import { JwtAuthGuard } from './jwt-auth.guard';
 
 
 @Controller('auth')
@@ -28,5 +30,12 @@ export class AuthController {
     forgotPasswordConf(@Body() forgotPasswordConfDto : forgotPasswordConfDto) {
         return this.authService.forgotPasswordConf(forgotPasswordConfDto)
     }
+
+    
+  @Put('updateProfile')
+  @UseGuards(JwtAuthGuard)
+  updateProfile(@Req() req, @Body() updateProfileDto: UpdateProfileDto) {
+    return this.authService.updateProfile(req.user.userId, updateProfileDto.username, updateProfileDto.password);
+  }
 
 }

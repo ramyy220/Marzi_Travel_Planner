@@ -14,7 +14,7 @@ datasource db {
 }
 
 model User {
-  userId    Int      @id @default(autoincrement())
+  userId    Int      @id @default(autoincrement()) @unique
   username  String   @db.VarChar(65)
   email     String   @unique @db.VarChar(255)
   password  String   @db.VarChar(255)
@@ -37,4 +37,12 @@ model Destionation {
 model Sessions {
   SessionId Int @id @default(autoincrement())
   userId Int 
+}
+
+model Contact {
+  id       Int      @id @default(autoincrement())
+  name     String
+  email    String
+  message  String
+  createdAt DateTime @default(now())
 }

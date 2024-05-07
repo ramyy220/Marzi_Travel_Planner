@@ -1,4 +1,4 @@
-import { ConflictException, Injectable, NotFoundException, UnauthorizedException } from '@nestjs/common';
+import { ConflictException, Injectable, InternalServerErrorException, NotFoundException, UnauthorizedException } from '@nestjs/common';
 import * as bcrypt from 'bcrypt';
 import { SignupDto } from './dto/signupDto';
 import { SigninDto } from './dto/signinDto';
@@ -26,7 +26,7 @@ export class AuthService {
                  throw new ConflictException('User already exists')
              }
              // hasher le mot de passe
-             const hash = await bcrypt.hash(password, 20)
+             const hash = await bcrypt.hash(password, 10)
             // enregistrer l'utilisateur dans la base de donnees
              await this.prismaService.user.create({data : {email, username, password: hash}})
             // envoyer un mail de confirmation a l'utilisateur
@@ -45,15 +45,16 @@ export class AuthService {
                     throw new NotFoundException('User does not exist')
                 }
                 // verifier si le mot de passe est correct
-                  const bool = await bcrypt.compare(password, user.password)
-                  if (!bool) {
-                   throw new UnauthorizedException('Invalid credentials')
+                const bool = await bcrypt.compare(password, user.password)
+                if (!bool) {
+                 throw new UnauthorizedException('Invalid password')
                 }
                 // creer un token JWT
                 const payload = {
                     sub : user.userId,
                     email : user.email
                 }
+                
                 const token = this.jwtService.sign(payload, {expiresIn : '1h', secret : this.configService.get('SECRET_KEY')})
                 return {token, user : {email : user.email, username : user.username}, message : 'User signed in'}
         
@@ -75,35 +76,51 @@ export class AuthService {
                 })
 
                 // envoyer le code de verification par mail 
-                const url = `http://localhost:3000/auth/forgotPassword` //changera avec le front après
+                const url = `http://localhost:3000/verifyotp` //changera avec le front après
                 await this.mailService.SendForgotPasswordMail(email, code, url)
                 return {message : 'Code sent'}
                 // ** enregistrer le code de verification dans la base de données
             }
 
         async forgotPasswordConf (forgotPasswordConfDto: forgotPasswordConfDto) {
-                const {email, password, code} = forgotPasswordConfDto;
-                // verifier si l'utilisateur existe ( encore)
-                const user = await this.prismaService.user.findUnique({where : {email}})
+            const {code} = forgotPasswordConfDto;
+            // verifier si le code est correct
+            const verified = speakeasy.totp.verify({
+                secret: this.configService.get('OTP_CODE'),
+                encoding: 'base32',
+                token: code,
+                window: 1,
+            })
+            if (!verified) {
+                throw new UnauthorizedException('Invalid code')
+            }
+            }
+
+            async updateProfile(userId: number, username: string, password: string) {
+                // verifier si l'utilisateur existe
+                let payload = {}
+                if(username){
+                    payload = {username}
+                }
+                const user = await this.prismaService.user.findUnique({where : {userId}});
                 if (!user) {
                     throw new NotFoundException('User does not exist')
                 }
-                // verifier si le code de verification est correct
-                const bool = speakeasy.totp.verify({
-                    secret: this.configService.get('OTP_CODE'),
-                    encoding: 'base32',
-                    token: code,
-                    step: 60 * 10,
-                    digits: 6
-                })
-                if (!bool) {
-                    throw new UnauthorizedException('Invalid code')
-                }
                 // hasher le mot de passe
-                const hash = await bcrypt.hash(password, 20)
-                // changer le mot de passe
-                await this.prismaService.user.update({where : {email}, data : {password : hash}})
-                return {message : 'Password changed'}
+                if(password){
+                    const hash = await bcrypt.hash(password, 10)
+                    payload = {...payload, password : hash}
+                }
+                // mettre a jour le profile
+                try {
+                    await this.prismaService.user.update({where : {userId}, data : {...payload}});
+                    return {message : 'Profile updated'};
+                } catch (error) {
+                    throw new InternalServerErrorException('Error updating profile');
+                }
             }
+
+    
+            
 
 }

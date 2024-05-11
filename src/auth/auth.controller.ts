@@ -6,11 +6,13 @@ import { forgotPasswordDto } from './dto/forgotPasswordDto';
 import { forgotPasswordConfDto } from './dto/forgotPasswordConfDto';
 import { UpdateProfileDto } from './dto/updateProfileDto';
 import { JwtAuthGuard } from './jwt-auth.guard';
+import { ContactDto } from './dto/ContactDto';
+import { MailService } from 'src/mail/mail.service';
 
 
 @Controller('auth')
 export class AuthController {
-    constructor(private readonly authService : AuthService) {}
+    constructor(private readonly authService : AuthService, private readonly mailService : MailService) {}
     @Post('signup')
     signup(@Body() SignupDto : SignupDto) {
         return this.authService.signup(SignupDto)
@@ -37,5 +39,11 @@ export class AuthController {
   updateProfile(@Req() req, @Body() updateProfileDto: UpdateProfileDto) {
     return this.authService.updateProfile(req.user.userId, updateProfileDto.username, updateProfileDto.password);
   }
+
+  @Post('contact')
+  async sendContactMessage(@Body() contactDto: ContactDto) {
+  return this.mailService.sendContactEmail(contactDto);
+}
+
 
 }

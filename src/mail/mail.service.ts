@@ -1,5 +1,6 @@
 import { Injectable } from '@nestjs/common';
 const Mailjet = require('node-mailjet');
+import { ContactDto } from '../auth/dto/ContactDto';
 	
 @Injectable()
 export class MailService {
@@ -63,5 +64,36 @@ export class MailService {
 	// Attendre la réponse de l'envoi du mail
 	const response = await request;
 	console.log(response.body);
+  }
+
+  async sendContactEmail(contactDto: ContactDto) {
+	const { name, email, message } = contactDto;
+	const mailjet = new Mailjet({
+	  apiKey: process.env.MJ_APIKEY_PUBLIC,
+	  apiSecret: process.env.MJ_APIKEY_PRIVATE
+	});
+  
+	const request = mailjet.post("send", {'version': 'v3.1'}).request({
+	  "Messages":[
+		{
+		  "From": {
+			"Email": "ramyamr70@gmail.com",
+			"Name": "Ramy AMRANI"
+		  },
+		  "To": [
+			{
+			  "Email": "ramyamr70@gmail.com",  
+			  "Name": "Support"
+			}
+		  ],
+		  "Subject": 'New Contact Message',
+		  "HTMLPart": `<h3>You have a new contact message from: ${name} (${email})</h3><p>${message}</p>`
+		}
+	  ]
+	});
+  
+	const response = await request;
+	console.log(response.body);
+	return { message: 'Contact email sent successfully' };
   }
 }
